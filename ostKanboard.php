@@ -15,12 +15,18 @@ class ostKanboard extends Plugin {
     private $created_tickets = array();
 
     function bootstrap() {
-        Signal::connect('object.created', array($this, 'onObjectCreated'));
-        Signal::connect('object.edited', array($this, 'onObjectEdited'));
-        // Older (pre 1.18) signals
-        Signal::connect('ticket.created', array($this, 'onTicketCreated'))
-        Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
-        Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
+	$version = defined('THIS_VERSION') ? THIS_VERSION : '1.18.0';
+
+        if (version_compare($version, '1.18.0', '>=')) {
+            Signal::connect('object.created', array($this, 'onObjectCreated'));
+            Signal::connect('object.edited', array($this, 'onObjectEdited'));
+            Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
+            Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
+        } else {
+            Signal::connect('ticket.created', array($this, 'onTicketCreated'));
+            Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
+            Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
+		}
     }
 
     function onObjectCreated($object) {
@@ -164,7 +170,10 @@ class ostKanboard extends Plugin {
         
         $creator = $ticket->getUser();
         $assignee = $ticket->getAssignee();
-        
+
+	$desc = (string)$this->getTicketDescription($ticket);
+	error_log('Kanboard debug: Task desc: ' . substr($desc, 0, 120));
+
         $params = array(
             'title' => $ticket->getSubject(),
             'project_id' => (int)$project_id,
@@ -300,16 +309,41 @@ class ostKanboard extends Plugin {
     }
 
     function getTicketDescription(Ticket $ticket) {
+        if (method_exists($ticket, 'getLastMessage')) {
+            $msg = $ticket->getLastMessage();
+            if ($msg) {
+                if (method_exists($msg, 'getBody')) {
+                    $body = $msg->getBody();
+                } else {
+                    $body = $msg->getMessage();
+                }
+
+                $body = trim((string)$body);
+                if ($body !== '') {
+                    return strip_tags($body);
+                }
+            }
+        }
+
         $thread = $ticket->getThread();
         if ($thread) {
             $entries = $thread->getEntries();
             if ($entries && count($entries) > 0) {
-                return strip_tags($entries[0]->getBody());
+                foreach ($entries as $entry) {
+                    if (!method_exists($entry, 'getBody')) {
+                        continue;
+                    }
+                    $body = trim((string)$entry->getBody());
+                    if ($body !== '') {
+                        return strip_tags($body);
+                    }
+                }
             }
         }
+
+
         return '';
     }
-
     function getColorForPriority($priority) {
         if (!$priority) {
             return 'yellow';
