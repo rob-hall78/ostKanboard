@@ -5,8 +5,6 @@ require_once INCLUDE_DIR . 'class.forms.php';
 
 class ostKanboardConfig extends PluginConfig {
 
-    // Provide compatibility function for versions of osTicket prior to
-    // translation support (v1.9.4)
     function translate() {
         if (!method_exists('Plugin', 'translate')) {
             return array(
@@ -18,17 +16,17 @@ class ostKanboardConfig extends PluginConfig {
                 }
             );
         }
-        return Plugin::translate('webhook');
+        return Plugin::translate('ostkanboard');
     }
 
     function getOptions() {
         list ($__, $_N) = self::translate();
 
         return array(
-            'webhook'                      => new SectionBreakField(array(
+            'ostKanboard'                      => new SectionBreakField(array(
                 'hint'  => $__('<br>Configure Kanboard API integration. This plugin will send ticket events to Kanboard via JSON-RPC API.')
                     )),
-            'webhook-api-url'              => new TextboxField(array(
+            'ostKanboard-api-url'              => new TextboxField(array(
                 'label'         => $__('Kanboard API URL'),
                 'required'      => true,
                 'default'       => '',
@@ -38,7 +36,7 @@ class ostKanboardConfig extends PluginConfig {
                     'length' => 300
                 )
                     )),
-            'webhook-api-key'              => new TextboxField(array(
+            'ostKanboard-api-key'              => new TextboxField(array(
                 'label'         => $__('Kanboard API Key'),
                 'required'      => true,
                 'default'       => '',
@@ -48,19 +46,19 @@ class ostKanboardConfig extends PluginConfig {
                     'length' => 300
                 )
                     )),
-            'webhook-department-mappings'  => new TextareaField(array(
+            'ostKanboard-department-mappings'  => new TextareaField(array(
                 'label'         => $__('Department to Project Mappings'),
                 'required'      => true,
                 'default'       => '',
                 'placeholder'   => "dept_id:project_id:new_column_id:done_column_id\n1:1:2:1\n2:3:2:5",
-                'hint'          => $__('Map osTicket department IDs to Kanboard project and column IDs. Format: dept_id:project_id:new_column_id:done_column_id (one per line). Only tickets from mapped departments will trigger webhooks.'),
+                'hint'          => $__('Map osTicket department IDs to Kanboard project and column IDs. Format: dept_id:project_id:new_column_id:done_column_id (one per line). Only tickets from mapped departments will trigger API calls.'),
                 'configuration' => array(
                     'rows'   => 10,
                     'cols'   => 60,
                     'html'   => false
                 )
                     )),
-            'webhook-swimlane-id'          => new TextboxField(array(
+            'ostKanboard-swimlane-id'          => new TextboxField(array(
                 'label'         => $__('Default Swimlane ID'),
                 'required'      => false,
                 'default'       => '0',

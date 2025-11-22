@@ -13,22 +13,27 @@ class ostKanboard extends Plugin {
     var $config_class = "ostKanboardConfig";
     
     private $created_tickets = array();
-
+/*
     function bootstrap() {
-	$version = defined('THIS_VERSION') ? THIS_VERSION : '1.18.0';
-
+        $version = defined('THIS_VERSION') ? THIS_VERSION : '1.18.0';
+    
         if (version_compare($version, '1.18.0', '>=')) {
             Signal::connect('object.created', array($this, 'onObjectCreated'));
             Signal::connect('object.edited', array($this, 'onObjectEdited'));
-            Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
-            Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
         } else {
             Signal::connect('ticket.created', array($this, 'onTicketCreated'));
             Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
             Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
-		}
-    }
-
+        }
+    }   
+ */
+    function bootstrap() {
+    Signal::connect('object.created', array($this, 'onObjectCreated'));
+    Signal::connect('object.edited', array($this, 'onObjectEdited'));
+    Signal::connect('ticket.created', array($this, 'onTicketCreated'));
+    Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
+    Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
+}
     function onObjectCreated($object) {
         if ($object instanceof Ticket) {
             $ticket_id = $object->getId();
@@ -52,13 +57,15 @@ class ostKanboard extends Plugin {
                     }
                 }
                 
-                $this->onTicketCreated($object);
+#                $this->onTicketCreated($object);
             }
         }
     }
 
     function onObjectEdited($object) {
-        if ($object instanceof Ticket) {
+	error_log("ostKanboard: onObjectEdited fired");
+	if ($object instanceof Ticket) {
+	    error_log("ostKanboard: object is a Ticket");
             $status = $object->getStatus();
             
             if ($status && ($status->getName() == 'Resolved' || $status->getName() == 'Closed')) {
@@ -71,7 +78,8 @@ class ostKanboard extends Plugin {
                     if ($existing_task) {
                         $this->onTicketClosed($object);
                     }
-                }
+		}
+		return;
 	    }
 
 	    if($object->getAssignee()) {
@@ -93,7 +101,7 @@ class ostKanboard extends Plugin {
             return array();
         }
         
-        $mappings_text = $config->get('webhook-department-mappings');
+        $mappings_text = $config->get('ostKanboard-department-mappings');
         if (!$mappings_text) {
             return array();
         }
@@ -155,7 +163,7 @@ class ostKanboard extends Plugin {
         
         $project_id = $mapping['project_id'];
         $column_id = $mapping['new_column_id'];
-        
+
         $instances = $this->getActiveInstances();
         if ($instances && $instances->count() > 0) {
             $instance = $instances->first();
@@ -163,7 +171,7 @@ class ostKanboard extends Plugin {
         } else {
             $config = $this->getConfig();
         }
-        $swimlane_id = $config ? $config->get('webhook-swimlane-id') : '0';
+        $swimlane_id = $config ? $config->get('ostKanboard-swimlane-id') : '0';
         if (!$swimlane_id) {
             $swimlane_id = '0';
         }
@@ -189,6 +197,7 @@ class ostKanboard extends Plugin {
     }
 
     function onTicketAssigned(Ticket $ticket) {
+	error_log("ostKanboard: onTicketAssigned fired for ticket " . $ticket->getNumber());
         global $cfg;
         if (!$cfg instanceof OsticketConfig) {
             error_log("ostKanboard plugin called too early.");
@@ -243,6 +252,7 @@ class ostKanboard extends Plugin {
     }
 
     function onTicketClosed(Ticket $ticket) {
+	error_log("ostKanboard: onTicketClosed fired for ticket " . $ticket->getNumber());
         global $cfg;
         if (!$cfg instanceof OsticketConfig) {
             error_log("ostKanboard plugin called too early.");
@@ -272,7 +282,7 @@ class ostKanboard extends Plugin {
         } else {
             $config = $this->getConfig();
         }
-        $swimlane_id = $config ? $config->get('webhook-swimlane-id') : '0';
+        $swimlane_id = $config ? $config->get('ostKanboard-swimlane-id') : '0';
         if (!$swimlane_id) {
             $swimlane_id = '0';
         }
@@ -405,8 +415,8 @@ class ostKanboard extends Plugin {
             return false;
         }
         
-        $url = $config->get('webhook-api-url');
-        $api_key = $config->get('webhook-api-key');
+        $url = $config->get('ostKanboard-api-url');
+        $api_key = $config->get('ostKanboard-api-key');
         
         if (!$url || !$api_key) {
             $ost->logError('ostKanboard Plugin not configured', 'You need to configure Kanboard API URL and API Key before using this plugin.');
@@ -470,4 +480,5 @@ class ostKanboard extends Plugin {
         }
     }
 }
+
 
