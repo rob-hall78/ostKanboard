@@ -25,7 +25,7 @@ This plugin integrates osTicket with Kanboard by calling the Kanboard API when t
    include/plugins/ostKanboard/
    ├── config.php
    ├── plugin.php
-   └── webhook.php
+   └── ostKanboard.php
    ```
 
 2. Set appropriate file permissions so the web server can read the files:
@@ -47,7 +47,7 @@ After installing the plugin, you need to enable it, then create and configure an
 ### 1. Create Plugin Instance
 
 1. Go to Admin Panel → Manage → Plugins
-2. Click on "Kanboard Webhook Integration"
+2. Click on "osTicket Kanboard Plugin"
 3. Click the "Instances" tab
 4. Click "Add New Instance"
 5. Give it a name (e.g., "Default") and set Status to "Active"
@@ -157,8 +157,8 @@ The plugin uses the following Kanboard JSON-RPC API methods:
 
 ## Important Notes
 
-- **Webhooks only fire for mapped departments**: If a department is not in your mapping configuration, no webhook will be sent
-- **Error Logging**: Check your osTicket error logs for any webhook issues or unmapped department notifications
+- **API calls only fire for mapped departments**: If a department is not in your mapping configuration, no API call will be sent
+- **Error Logging**: Check your osTicket error logs for any API issues or unmapped department notifications
 - **Priority Mapping**: 
   - Low (1) → Green, Priority 0
   - Normal (2) → Yellow, Priority 1
@@ -217,7 +217,7 @@ curl -u "jsonrpc:YOUR_API_KEY" \
 
 ### Configuration not saving
 1. Ensure you created a plugin instance (not just enabled the plugin)
-2. Go to Admin Panel → Manage → Plugins → Kanboard Webhook Integration → Instances
+2. Go to Admin Panel → Manage → Plugins → osTicket Kanboard Plugin → Instances
 3. Create an instance if one doesn't exist
 4. Configure settings in the instance, not the main plugin page
 
