@@ -13,21 +13,8 @@ class ostKanboard extends Plugin {
     var $config_class = "ostKanboardConfig";
     
     private $created_tickets = array();
-/*
-    function bootstrap() {
-        $version = defined('THIS_VERSION') ? THIS_VERSION : '1.18.0';
-    
-        if (version_compare($version, '1.18.0', '>=')) {
-            Signal::connect('object.created', array($this, 'onObjectCreated'));
-            Signal::connect('object.edited', array($this, 'onObjectEdited'));
-        } else {
-            Signal::connect('ticket.created', array($this, 'onTicketCreated'));
-            Signal::connect('ticket.assigned', array($this, 'onTicketAssigned'));
-            Signal::connect('ticket.closed', array($this, 'onTicketClosed'));
-        }
-    }   
- */
-    function bootstrap() {
+
+function bootstrap() {
     Signal::connect('object.created', array($this, 'onObjectCreated'));
     Signal::connect('object.edited', array($this, 'onObjectEdited'));
     Signal::connect('ticket.created', array($this, 'onTicketCreated'));
@@ -56,8 +43,6 @@ class ostKanboard extends Plugin {
                         return;
                     }
                 }
-                
-#                $this->onTicketCreated($object);
             }
         }
     }
@@ -197,7 +182,6 @@ class ostKanboard extends Plugin {
     }
 
     function onTicketAssigned(Ticket $ticket) {
-	error_log("ostKanboard: onTicketAssigned fired for ticket " . $ticket->getNumber());
         global $cfg;
         if (!$cfg instanceof OsticketConfig) {
             error_log("ostKanboard plugin called too early.");
@@ -252,7 +236,6 @@ class ostKanboard extends Plugin {
     }
 
     function onTicketClosed(Ticket $ticket) {
-	error_log("ostKanboard: onTicketClosed fired for ticket " . $ticket->getNumber());
         global $cfg;
         if (!$cfg instanceof OsticketConfig) {
             error_log("ostKanboard plugin called too early.");
