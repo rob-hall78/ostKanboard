@@ -48,7 +48,6 @@ function bootstrap() {
     }
 
     function onObjectEdited($object) {
-	error_log("ostKanboard: onObjectEdited fired");
 	if ($object instanceof Ticket) {
 	    error_log("ostKanboard: object is a Ticket");
             $status = $object->getStatus();
@@ -63,11 +62,39 @@ function bootstrap() {
                     if ($existing_task) {
                         $this->onTicketClosed($object);
                     }
-		}
-		return;
-	    }
+		        }
+		        return;
+            }
 
-	    if($object->getAssignee()) {
+            if ($status && ($status->getName() == 'On Hold')) {
+                $dept_id = $object->getDeptId();
+                $mapping = $this->getDepartmentMapping($dept_id);
+
+                if($mapping) {
+                    $existing_task = $this->getKanboardTaskByReference($object->getNumber(), $mapping['project_id']);
+
+                    if($existing_task) {
+                        $this->onTicketHold($object);
+                    }
+                }
+                return;
+            }
+
+            if ($status && ($status->getName() == 'Open')) {
+                $dept_id = $object->getDeptId();
+                $mapping = $this->getDepartmentMapping($dept_id);
+
+                if($mapping) {
+                    $existing_task = $this->getKanboardTaskByReference($object->getNumber(), $mapping['project_id']);
+
+                    if($existing_task) {
+                        $this->onTicketOpenStatus($object);
+                    }
+                }
+                return;
+            }
+
+            if($object->getAssignee()) {
                 $this->onTicketAssigned($object);
             }
         }
@@ -101,7 +128,22 @@ function bootstrap() {
             }
             
             $parts = explode(':', $line);
-            if (count($parts) >= 4) {
+            if (count($parts) >= 6) {
+                $dept_id = trim($parts[0]);
+                $project_id = trim($parts[1]);
+                $new_column_id = trim($parts[2]);
+                $done_column_id = trim($parts[3]);
+                $blocked_column_id = trim($parts[4]);
+                $wip_columnd_id = trim($parts[5]);
+                
+                $mappings[$dept_id] = array(
+                    'project_id' => $project_id,
+                    'new_column_id' => $new_column_id,
+                    'done_column_id' => $done_column_id,
+                    'blocked_column_id' => $blocked_column_id,
+                    'wip_column_id' => $wip_column_id
+                );
+            } elseif (count($parts) >= 4){
                 $dept_id = trim($parts[0]);
                 $project_id = trim($parts[1]);
                 $new_column_id = trim($parts[2]);
@@ -233,6 +275,108 @@ function bootstrap() {
         );
         
         $this->callKanboardAPI('updateTask', $params);
+    }
+
+    function onTicketHold(Ticket $ticket) {
+        global $cfg;
+        if (!$cfg instanceof OsticketConfig) {
+            error_log("ostKanboard plugin called too early.");
+            return;
+        }
+        
+        $dept_id = $ticket->getDeptId();
+        $mapping = $this->getDepartmentMapping($dept_id);
+        
+        if (!$mapping) {
+            return;
+        }
+        
+        if (!isset($mapping['blocked_column_id']) || empty($mapping['blocked_column_id'])) {
+            error_log("ostKanboard plugin: no blocked column configured for dept_id={$dept_id}");
+            return;
+        }
+
+        $project_id = $mapping['project_id'];
+        $task = $this->getKanboardTaskByReference($ticket->getNumber(), $project_id);
+        
+        if (!$task) {
+            return;
+        }
+        
+        $dst_column_id = $mapping['blocked_column_id'];
+        
+        $instances = $this->getActiveInstances();
+        if ($instances && $instances->count() > 0) {
+            $instance = $instances->first();
+            $config = $instance->getConfig();
+        } else {
+            $config = $this->getConfig();
+        }
+        $swimlane_id = $config ? $config->get('ostKanboard-swimlane-id') : '0';
+        if (!$swimlane_id) {
+            $swimlane_id = '0';
+        }
+        
+        $params = array(
+            'project_id' => (int)$project_id,
+            'task_id' => (int)$task['id'],
+            'column_id' => (int)$dst_column_id,
+            'position' => 1,
+            'swimlane_id' => (int)$swimlane_id
+        );
+        
+        $this->callKanboardAPI('moveTaskPosition', $params);
+    }
+
+    function onTicketOpenStatus(Ticket $ticket) {
+        global $cfg;
+        if (!$cfg instanceof OsticketConfig) {
+            error_log("ostKanboard plugin called too early.");
+            return;
+        }
+        
+        $dept_id = $ticket->getDeptId();
+        $mapping = $this->getDepartmentMapping($dept_id);
+        
+        if (!$mapping) {
+            return;
+        }
+        
+        if (!isset($mapping['wip_column_id']) || empty($mapping['wip_column_id'])) {
+            error_log("ostKanboard plugin: no blocked column configured for dept_id={$dept_id}");
+            return;
+        }
+
+        $project_id = $mapping['project_id'];
+        $task = $this->getKanboardTaskByReference($ticket->getNumber(), $project_id);
+        
+        if (!$task) {
+            return;
+        }
+        
+        $dst_column_id = $mapping['wip_column_id'];
+        
+        $instances = $this->getActiveInstances();
+        if ($instances && $instances->count() > 0) {
+            $instance = $instances->first();
+            $config = $instance->getConfig();
+        } else {
+            $config = $this->getConfig();
+        }
+        $swimlane_id = $config ? $config->get('ostKanboard-swimlane-id') : '0';
+        if (!$swimlane_id) {
+            $swimlane_id = '0';
+        }
+        
+        $params = array(
+            'project_id' => (int)$project_id,
+            'task_id' => (int)$task['id'],
+            'column_id' => (int)$dst_column_id,
+            'position' => 1,
+            'swimlane_id' => (int)$swimlane_id
+        );
+        
+        $this->callKanboardAPI('moveTaskPosition', $params);
     }
 
     function onTicketClosed(Ticket $ticket) {

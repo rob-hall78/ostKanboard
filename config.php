@@ -50,8 +50,8 @@ class ostKanboardConfig extends PluginConfig {
                 'label'         => $__('Department to Project Mappings'),
                 'required'      => true,
                 'default'       => '',
-                'placeholder'   => "dept_id:project_id:new_column_id:done_column_id\n1:1:2:1\n2:3:2:5",
-                'hint'          => $__('Map osTicket department IDs to Kanboard project and column IDs. Format: dept_id:project_id:new_column_id:done_column_id (one per line). Only tickets from mapped departments will trigger API calls.'),
+                'placeholder'   => "dept_id:project_id:new_column_id:done_column_id:blocked_column_id:wip_column_id\n1:1:2:1:4:5\n2:3:2:5:6:4",
+                'hint'          => $__('Map osTicket department IDs to Kanboard project and column IDs. Format: dept_id:project_id:new_column_id:done_column_id:blocked_column_id:wip_column_id (one per line). Only tickets from mapped departments will trigger API calls.'),
                 'configuration' => array(
                     'rows'   => 10,
                     'cols'   => 60,

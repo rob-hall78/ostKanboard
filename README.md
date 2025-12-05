@@ -1,6 +1,6 @@
 # osTicket to Kanboard Plugin
 
-This plugin integrates osTicket with Kanboard by calling the Kanboard API when tickets are created, assigned, or closed.
+This plugin integrates osTicket with Kanboard by calling the Kanboard API when tickets are created, assigned, put on hold, or closed.
 
 ## Features
 
@@ -70,7 +70,7 @@ The plugin will authenticate using username `jsonrpc` and your API key as the pa
 Map osTicket department IDs to Kanboard project and column IDs. Each mapping should be on its own line in the format:
 
 ```
-dept_id:project_id:new_column_id:done_column_id
+dept_id:project_id:new_column_id:done_column_id:blocked_column_id:wip_column_id
 ```
 
 **Example Configuration:**
@@ -78,12 +78,16 @@ dept_id:project_id:new_column_id:done_column_id
 1:1:2:1
 2:3:2:5
 5:1:2:1
+6:1:2:1:5:3
 ```
 
 This configuration means:
 - Department 1 → Project 1, new tickets go to column 2, closed tickets to column 1
 - Department 2 → Project 3, new tickets go to column 2, closed tickets to column 5
 - Department 5 → Project 1, new tickets go to column 2, closed tickets to column 1
+- Department 6 → Project 1, new tickets go to column 2, closed tickets to column 1, on hold tickets to column 5, Work In Progress (Open) to column 3
+
+Blocked Column Id and WIP Column Id are optional.
 
 **Finding Department IDs:**
 - Go to Admin Panel → Manage → Departments
@@ -121,6 +125,18 @@ When a ticket is assigned to a staff member:
 - If user exists in Kanboard, calls `updateTask` to assign the task
 - If user doesn't exist in Kanboard, assignment is skipped
 - **Note**: Staff usernames in osTicket must match usernames in Kanboard
+
+### Event: Ticket put on Hold
+When a ticket status is set to "On Hold":
+- Searches for the task by reference (ticket number)
+- If task exists, calls `moveTaskPosition` to move to "blocked" column
+- If task doesn't exist (e.g., old tickets), does nothing (won't create it)
+
+### Event: Ticket Status changed to Open
+When a ticket status is set to "Open":
+- Searches for the task by reference (ticket number)
+- If task exists, calls `moveTaskPosition` to move to "Work In Progress" column
+- If task doesn't exist (e.g., old tickets), does nothing (won't create it)
 
 ### Event: Ticket Closed/Resolved
 When a ticket status is set to "Resolved" or "Closed":
